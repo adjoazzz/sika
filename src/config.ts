@@ -3,7 +3,7 @@ import userConfig from '../pennywatch.config.js';
 export const config = {
   databaseUrl: userConfig.databaseUrl,
   databaseReadonlyUrl: userConfig.databaseUrl,
-  anthropicApiKey: userConfig.anthropicApiKey,
+  geminiApiKey: userConfig.geminiApiKey,
   telegramBotToken: userConfig.telegramBotToken,
   telegramWebhookSecret: userConfig.smsApiKey,
   telegramChatId: userConfig.telegramChatId,

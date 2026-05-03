@@ -1,5 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { z } from 'zod';
 
 import { config } from '../config.js';
@@ -80,45 +79,78 @@ Return a JSON object with these fields:
   return prompt;
 }
 
+const geminiSmsClassificationSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    type: {
+      type: Type.STRING,
+      enum: ['transaction', 'balance_check', 'other'],
+    },
+    balance: {
+      type: Type.NUMBER,
+      nullable: true,
+    },
+    source: {
+      type: Type.STRING,
+    },
+  },
+  required: ['type', 'source'],
+};
+
 export async function classifySms(smsBody: string): Promise<SmsClassification> {
-  const client = new Anthropic({ apiKey: config.anthropicApiKey });
+  const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
   const prompt = buildClassificationPrompt(smsBody);
 
-  const message = await client.messages.parse({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 128,
-    messages: [{ role: 'user', content: prompt }],
-    output_config: {
-      format: zodOutputFormat(SmsClassificationSchema),
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: geminiSmsClassificationSchema,
+      maxOutputTokens: 128,
     },
   });
 
-  if (!message.parsed_output) {
+  if (!response.text) {
     throw new Error('LLM returned no classification');
   }
 
-  return message.parsed_output;
+  return JSON.parse(response.text) as SmsClassification;
 }
+
+const geminiTransactionSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    amount: { type: Type.NUMBER },
+    direction: { type: Type.STRING, enum: ['credit', 'debit'] },
+    merchant: { type: Type.STRING },
+    category: { type: Type.STRING },
+    transaction_date: { type: Type.STRING },
+    source: { type: Type.STRING },
+  },
+  required: ['amount', 'direction', 'merchant', 'category', 'transaction_date', 'source'],
+};
 
 export async function parseSms(
   smsBody: string,
   overrides: CategoryOverride[],
 ): Promise<ParsedTransaction> {
-  const client = new Anthropic({ apiKey: config.anthropicApiKey });
+  const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
   const prompt = buildParsingPrompt(smsBody, overrides);
 
-  const message = await client.messages.parse({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 256,
-    messages: [{ role: 'user', content: prompt }],
-    output_config: {
-      format: zodOutputFormat(TransactionSchema),
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: geminiTransactionSchema,
+      maxOutputTokens: 256,
     },
   });
 
-  if (!message.parsed_output) {
+  if (!response.text) {
     throw new Error('LLM returned no parsed output');
   }
 
-  return message.parsed_output;
+  return JSON.parse(response.text) as ParsedTransaction;
 }

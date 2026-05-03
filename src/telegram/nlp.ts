@@ -1,18 +1,24 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
-import { z } from 'zod';
+import { GoogleGenAI, Type, Schema } from '@google/genai';
 
 import { config } from '../config.js';
 import { readonlyQuery } from '../db/client.js';
 
-const SqlQuerySchema = z.object({
-  sql: z.string(),
-  explanation: z.string(),
-});
+const geminiSqlQuerySchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    sql: { type: Type.STRING },
+    explanation: { type: Type.STRING },
+  },
+  required: ['sql', 'explanation'],
+};
 
-const ResponseSchema = z.object({
-  response: z.string(),
-});
+const geminiResponseSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    response: { type: Type.STRING },
+  },
+  required: ['response'],
+};
 
 function buildSchemaContext(): string {
   const bankList = config.banks.map(b => `"${b.id}"`).join(', ') || '"bank_name"';
@@ -65,24 +71,25 @@ User question: ${question}`;
 
 export async function handleNaturalLanguageQuery(question: string): Promise<string> {
   try {
-    const client = new Anthropic({ apiKey: config.anthropicApiKey });
+    const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
 
     // Step 1: Generate SQL query
     const queryPrompt = buildQueryPrompt(question);
-    const queryMessage = await client.messages.parse({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      messages: [{ role: 'user', content: queryPrompt }],
-      output_config: {
-        format: zodOutputFormat(SqlQuerySchema),
+    const queryResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: queryPrompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: geminiSqlQuerySchema,
+        maxOutputTokens: 512,
       },
     });
 
-    if (!queryMessage.parsed_output) {
+    if (!queryResponse.text) {
       return '❌ Sorry, I couldn\'t understand that question. Try rephrasing or use a command like /summary.';
     }
 
-    const { sql } = queryMessage.parsed_output;
+    const { sql } = JSON.parse(queryResponse.text);
 
     // Safety: reject anything that isn't a SELECT, or contains multiple statements
     const trimmed = sql.trim().toUpperCase();
@@ -97,26 +104,28 @@ export async function handleNaturalLanguageQuery(question: string): Promise<stri
     const result = await readonlyQuery(sql);
 
     // Step 3: Format results with LLM
-    const formatMessage = await client.messages.parse({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: `The user asked: "${question}"
+    const formatPrompt = `The user asked: "${question}"
 
 The SQL query returned these results:
 ${JSON.stringify(result.rows, null, 2)}
 
-Format this into a clear, readable Telegram message. Use ${config.currency} as the currency. Keep it concise. Use markdown formatting (* for bold).`,
-        },
-      ],
-      output_config: {
-        format: zodOutputFormat(ResponseSchema),
+Format this into a clear, readable Telegram message. Use ${config.currency} as the currency. Keep it concise. Use markdown formatting (* for bold).`;
+
+    const formatResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: formatPrompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: geminiResponseSchema,
+        maxOutputTokens: 1024,
       },
     });
 
-    return formatMessage.parsed_output?.response ?? '❌ Could not format the response.';
+    if (!formatResponse.text) {
+      return '❌ Could not format the response.';
+    }
+    const { response } = JSON.parse(formatResponse.text);
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     if (message.includes('statement_timeout') || message.includes('timeout')) {
