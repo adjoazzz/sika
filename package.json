@@ -1,5 +1,5 @@
 {
-  "name": "pennywatch",
+  "name": "sika",
   "version": "1.0.0",
   "description": "Personal finance tracker that reads bank SMS, parses with AI, and gives spending insights via Telegram",
   "main": "src/index.ts",

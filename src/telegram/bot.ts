@@ -24,6 +24,10 @@ bot.use(async (ctx, next) => {
   await next();
 });
 
+bot.command('start', async (ctx) => {
+  await ctx.reply('Welcome to Sika! 💸 I am your personal finance tracker. Send me an SMS transaction, or type commands like /summary or /balance.');
+});
+
 bot.command('summary', async (ctx) => {
   const msg = await handleSummary();
   await ctx.reply(msg, { parse_mode: 'Markdown' });

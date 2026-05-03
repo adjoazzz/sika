@@ -31,7 +31,7 @@ async function start(): Promise<void> {
   startScheduler();
 
   app.listen(config.port, () => {
-    console.log(`PennyWatch server running on port ${config.port}`);
+    console.log(`Sika server running on port ${config.port}`);
     console.log(`Telegram webhook: ${config.webhookDomain}/api/telegram/webhook`);
   });
 }

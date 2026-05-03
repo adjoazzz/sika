@@ -1,4 +1,4 @@
-# PennyWatch
+# Sika
 
 Personal finance tracker that reads your bank SMS, parses them with AI, and gives you spending insights via a Telegram bot. Self-hosted, single-user, works with any bank in any country.
 
@@ -178,7 +178,7 @@ npm start
 Create `/etc/systemd/system/pennywatch.service`:
 ```ini
 [Unit]
-Description=PennyWatch
+Description=Sika
 After=network.target
 
 [Service]
@@ -232,7 +232,7 @@ Send `/summary` to your Telegram bot — it should respond.
 
 #### Create the Shortcut
 1. Open **Shortcuts** app on your iPhone
-2. Tap **+** to create a new shortcut, name it **PennyWatch**
+2. Tap **+** to create a new shortcut, name it **Sika**
 3. Add action: **Get Contents of URL**
    - URL: `https://your-domain/api/sms`
    - Method: **POST**
@@ -247,13 +247,13 @@ Send `/summary` to your Telegram bot — it should respond.
 1. Go to **Automation** tab → **+** → **Message**
 2. Set "Message contains" to your currency code (e.g., `GHS`, `KES`, `NGN`, `ZAR`)
 3. Set to **Run Immediately** (not "Ask Before Running")
-4. Action: **Run Shortcut** → select **PennyWatch**
+4. Action: **Run Shortcut** → select **Sika**
 5. For input, select **Message** → tap it and pick **Body**
 
 #### Tips
 - Add multiple keyword triggers for wider coverage: your currency code, `credited`, `debited`, `Payment`
 - The dedup system prevents duplicates even if multiple automations trigger on the same SMS
-- Test manually first: open the PennyWatch shortcut, tap Run, paste a sample SMS
+- Test manually first: open the Sika shortcut, tap Run, paste a sample SMS
 
 ### Step 7: Set Up Bot Commands
 
@@ -329,7 +329,7 @@ When you move money between your own accounts (e.g., bank → mobile money), you
 - Bank: "500 debited"
 - Mobile money: "500 received"
 
-Without handling this, your spending would be inflated by the full transfer amount. PennyWatch automatically matches these by checking:
+Without handling this, your spending would be inflated by the full transfer amount. Sika automatically matches these by checking:
 - Same amount (within a small fee tolerance)
 - Opposite direction (one debit, one credit)
 - Different source (different banks/services)
@@ -406,7 +406,7 @@ Common issues:
 The dedup system uses SHA-256 of the SMS body. If you see duplicates, they have slightly different text (extra whitespace, etc.). Check `raw_sms` in the transactions table.
 
 ### Markdown errors in Telegram
-Special characters in merchant names (underscores, asterisks) can break Telegram's Markdown. PennyWatch escapes these, but if you see issues, check the server logs for send errors.
+Special characters in merchant names (underscores, asterisks) can break Telegram's Markdown. Sika escapes these, but if you see issues, check the server logs for send errors.
 
 ---
 

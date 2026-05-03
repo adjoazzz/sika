@@ -3,6 +3,14 @@ import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { config } from '../config.js';
 import { readonlyQuery } from '../db/client.js';
 
+function parseJsonSafe(text: string): any {
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (match) {
+    return JSON.parse(match[1]);
+  }
+  return JSON.parse(text);
+}
+
 const geminiSqlQuerySchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -89,7 +97,7 @@ export async function handleNaturalLanguageQuery(question: string): Promise<stri
       return '❌ Sorry, I couldn\'t understand that question. Try rephrasing or use a command like /summary.';
     }
 
-    const { sql } = JSON.parse(queryResponse.text);
+    const { sql } = parseJsonSafe(queryResponse.text);
 
     // Safety: reject anything that isn't a SELECT, or contains multiple statements
     const trimmed = sql.trim().toUpperCase();
@@ -124,7 +132,7 @@ Format this into a clear, readable Telegram message. Use ${config.currency} as t
     if (!formatResponse.text) {
       return '❌ Could not format the response.';
     }
-    const { response } = JSON.parse(formatResponse.text);
+    const { response } = parseJsonSafe(formatResponse.text);
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

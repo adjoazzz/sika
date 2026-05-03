@@ -1,4 +1,4 @@
-import userConfig from '../pennywatch.config.js';
+import userConfig from '../sika.config.js';
 
 export const config = {
   databaseUrl: userConfig.databaseUrl,
