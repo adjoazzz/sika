@@ -18,21 +18,24 @@ app.use(smsRouter);
 
 // Start server and bot
 async function start(): Promise<void> {
-  // Set up Telegram webhook
-  const webhookCallback = await bot.createWebhook({
-    domain: config.webhookDomain,
-    path: '/api/telegram/webhook',
-    secret_token: config.telegramWebhookSecret,
+  // Use Long Polling for the bot — much more reliable for local development
+  // We delete the webhook first to ensure polling works
+  console.log('Deleting Telegram webhook...');
+  await bot.telegram.deleteWebhook();
+  console.log('Webhook deleted. Launching bot (polling)...');
+  
+  bot.launch().then(() => {
+    console.log('Telegram bot started (long polling)');
+  }).catch((err) => {
+    console.error('Failed to launch bot:', err);
   });
-
-  app.use(webhookCallback);
 
   // Start cron scheduler
   startScheduler();
 
   app.listen(config.port, () => {
     console.log(`Sika server running on port ${config.port}`);
-    console.log(`Telegram webhook: ${config.webhookDomain}/api/telegram/webhook`);
+    console.log(`API endpoints ready at: http://localhost:${config.port}`);
   });
 }
 

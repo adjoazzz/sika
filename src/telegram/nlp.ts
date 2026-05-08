@@ -1,29 +1,34 @@
-import { GoogleGenAI, Type, Schema } from '@google/genai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
 import { config } from '../config.js';
 import { readonlyQuery } from '../db/client.js';
 
 function parseJsonSafe(text: string): any {
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (match) {
-    return JSON.parse(match[1]);
+  try {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (match) {
+      return JSON.parse(match[1]);
+    }
+    return JSON.parse(text);
+  } catch (e) {
+    console.error('Failed to parse JSON from AI response:', text);
+    throw new Error('Invalid AI response format');
   }
-  return JSON.parse(text);
 }
 
-const geminiSqlQuerySchema: Schema = {
-  type: Type.OBJECT,
+const geminiSqlQuerySchema = {
+  type: SchemaType.OBJECT,
   properties: {
-    sql: { type: Type.STRING },
-    explanation: { type: Type.STRING },
+    sql: { type: SchemaType.STRING },
+    explanation: { type: SchemaType.STRING },
   },
   required: ['sql', 'explanation'],
 };
 
-const geminiResponseSchema: Schema = {
-  type: Type.OBJECT,
+const geminiResponseSchema = {
+  type: SchemaType.OBJECT,
   properties: {
-    response: { type: Type.STRING },
+    response: { type: SchemaType.STRING },
   },
   required: ['response'],
 };
@@ -79,25 +84,25 @@ User question: ${question}`;
 
 export async function handleNaturalLanguageQuery(question: string): Promise<string> {
   try {
-    const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
+    const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: geminiSqlQuerySchema,
+      }
+    });
 
     // Step 1: Generate SQL query
     const queryPrompt = buildQueryPrompt(question);
-    const queryResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: queryPrompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: geminiSqlQuerySchema,
-        maxOutputTokens: 512,
-      },
-    });
+    const queryResult = await model.generateContent(queryPrompt);
+    const queryText = queryResult.response.text();
 
-    if (!queryResponse.text) {
+    if (!queryText) {
       return '❌ Sorry, I couldn\'t understand that question. Try rephrasing or use a command like /summary.';
     }
 
-    const { sql } = parseJsonSafe(queryResponse.text);
+    const { sql } = parseJsonSafe(queryText);
 
     // Safety: reject anything that isn't a SELECT, or contains multiple statements
     const trimmed = sql.trim().toUpperCase();
@@ -119,22 +124,24 @@ ${JSON.stringify(result.rows, null, 2)}
 
 Format this into a clear, readable Telegram message. Use ${config.currency} as the currency. Keep it concise. Use markdown formatting (* for bold).`;
 
-    const formatResponse = await ai.models.generateContent({
+    const formatModel = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
-      contents: formatPrompt,
-      config: {
+      generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: geminiResponseSchema,
-        maxOutputTokens: 1024,
-      },
+      }
     });
 
-    if (!formatResponse.text) {
+    const formatResult = await formatModel.generateContent(formatPrompt);
+    const formatText = formatResult.response.text();
+
+    if (!formatText) {
       return '❌ Could not format the response.';
     }
-    const { response } = parseJsonSafe(formatResponse.text);
+    const { response } = parseJsonSafe(formatText);
     return response;
   } catch (error) {
+    console.error('NLP Error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     if (message.includes('statement_timeout') || message.includes('timeout')) {
       return '⏱️ That query took too long. Try asking something simpler.';

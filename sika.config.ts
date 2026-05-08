@@ -12,7 +12,7 @@ export default {
 
   // ─── Gemini ─────────────────────────────────────────────
   // API key from Google AI Studio
-  geminiApiKey: 'AIzaSyAQPfnqdJgypmCLTK49n3EesEMhm05OG9E',
+  geminiApiKey: 'AIzaSyCtlnR8Agt9ogdV5EpsI-yThsszrrc6g1k',
 
   // ─── Telegram Bot ──────────────────────────────────────────
   // 1. Message @BotFather on Telegram → /newbot → copy the token

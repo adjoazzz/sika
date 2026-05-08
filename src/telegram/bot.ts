@@ -17,8 +17,12 @@ function isAuthorized(chatId: number): boolean {
 }
 
 bot.use(async (ctx, next) => {
+  if (ctx.chat) {
+    console.log(`Incoming message from Chat ID: ${ctx.chat.id}`);
+  }
   if (ctx.chat && !isAuthorized(ctx.chat.id)) {
-    await ctx.reply('Unauthorized.');
+    console.log(`Access denied for Chat ID: ${ctx.chat.id}`);
+    await ctx.reply(`Unauthorized. Your Chat ID is ${ctx.chat.id}. Please add it to sika.config.ts.`);
     return;
   }
   await next();

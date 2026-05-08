@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, Schema } from '@google/genai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { z } from 'zod';
 
 import { config } from '../config.js';
@@ -79,54 +79,54 @@ Return a JSON object with these fields:
   return prompt;
 }
 
-const geminiSmsClassificationSchema: Schema = {
-  type: Type.OBJECT,
+const geminiSmsClassificationSchema = {
+  type: SchemaType.OBJECT,
   properties: {
     type: {
-      type: Type.STRING,
+      type: SchemaType.STRING,
       enum: ['transaction', 'balance_check', 'other'],
     },
     balance: {
-      type: Type.NUMBER,
+      type: SchemaType.NUMBER,
       nullable: true,
     },
     source: {
-      type: Type.STRING,
+      type: SchemaType.STRING,
     },
   },
   required: ['type', 'source'],
 };
 
 export async function classifySms(smsBody: string): Promise<SmsClassification> {
-  const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
-  const prompt = buildClassificationPrompt(smsBody);
-
-  const response = await ai.models.generateContent({
+  const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+  const model = genAI.getGenerativeModel({ 
     model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
+    generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: geminiSmsClassificationSchema,
-      maxOutputTokens: 128,
-    },
+    }
   });
+  
+  const prompt = buildClassificationPrompt(smsBody);
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
 
-  if (!response.text) {
+  if (!text) {
     throw new Error('LLM returned no classification');
   }
 
-  return JSON.parse(response.text) as SmsClassification;
+  return JSON.parse(text) as SmsClassification;
 }
 
-const geminiTransactionSchema: Schema = {
-  type: Type.OBJECT,
+const geminiTransactionSchema = {
+  type: SchemaType.OBJECT,
   properties: {
-    amount: { type: Type.NUMBER },
-    direction: { type: Type.STRING, enum: ['credit', 'debit'] },
-    merchant: { type: Type.STRING },
-    category: { type: Type.STRING },
-    transaction_date: { type: Type.STRING },
-    source: { type: Type.STRING },
+    amount: { type: SchemaType.NUMBER },
+    direction: { type: SchemaType.STRING, enum: ['credit', 'debit'] },
+    merchant: { type: SchemaType.STRING },
+    category: { type: SchemaType.STRING },
+    transaction_date: { type: SchemaType.STRING },
+    source: { type: SchemaType.STRING },
   },
   required: ['amount', 'direction', 'merchant', 'category', 'transaction_date', 'source'],
 };
@@ -135,22 +135,22 @@ export async function parseSms(
   smsBody: string,
   overrides: CategoryOverride[],
 ): Promise<ParsedTransaction> {
-  const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
-  const prompt = buildParsingPrompt(smsBody, overrides);
-
-  const response = await ai.models.generateContent({
+  const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+  const model = genAI.getGenerativeModel({ 
     model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
+    generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: geminiTransactionSchema,
-      maxOutputTokens: 256,
-    },
+    }
   });
 
-  if (!response.text) {
+  const prompt = buildParsingPrompt(smsBody, overrides);
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+
+  if (!text) {
     throw new Error('LLM returned no parsed output');
   }
 
-  return JSON.parse(response.text) as ParsedTransaction;
+  return JSON.parse(text) as ParsedTransaction;
 }
