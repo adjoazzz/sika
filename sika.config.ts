@@ -23,7 +23,7 @@ export default {
 
   // ─── Server ────────────────────────────────────────────────
   // Your public HTTPS domain (Telegram webhooks require HTTPS)
-  webhookDomain: 'https://new-places-feel.loca.lt',
+  webhookDomain: 'https://breezy-candies-bathe.loca.lt',
   port: 3000,
 
   // ─── SMS API Key ───────────────────────────────────────────
