@@ -2,14 +2,13 @@
 
 Personal finance tracker that reads your bank SMS, parses them with AI, and gives you spending insights via a Telegram bot. Self-hosted, single-user, works with any bank in any country.
 
-**Cost:** ~$0.50/month (LLM calls only). Everything else is free tier.
 
 ---
 
 ## How It Works
 
 ```
-Bank SMS → iOS Shortcut → Your Server → Claude Haiku 4.5 → Postgres → Telegram Bot
+Bank SMS → iOS Shortcut → Your Server → Gemini Flash  → Postgres → Telegram Bot
 ```
 
 1. You receive a transaction SMS from your bank or mobile money service

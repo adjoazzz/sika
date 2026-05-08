@@ -19,11 +19,7 @@ app.use(smsRouter);
 // Start server and bot
 async function start(): Promise<void> {
   // Use Long Polling for the bot — much more reliable for local development
-  // We delete the webhook first to ensure polling works
-  console.log('Deleting Telegram webhook...');
   await bot.telegram.deleteWebhook();
-  console.log('Webhook deleted. Launching bot (polling)...');
-  
   bot.launch().then(() => {
     console.log('Telegram bot started (long polling)');
   }).catch((err) => {
