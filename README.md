@@ -8,13 +8,13 @@ Personal finance tracker that reads your bank SMS, parses them with AI, and give
 ## How It Works
 
 ```
-Bank SMS → iOS Shortcut → Your Server → Gemini Flash  → Postgres → Telegram Bot
+Bank SMS → iOS Shortcut / Android App → Your Server → Gemini Flash → Postgres → Telegram Bot
 ```
 
 1. You receive a transaction SMS from your bank or mobile money service
-2. An iOS Shortcut automation detects it and POSTs the SMS text to your server
+2. An iOS Shortcut or Android automation (MacroDroid/Tasker) detects it and POSTs the SMS text to your server
 3. The server classifies the SMS (transaction / balance check / other)
-4. If it's a transaction, Claude Haiku 4.5 extracts: amount, merchant, category, direction
+4. If it's a transaction, Gemini Flash extracts: amount, merchant, category, direction
 5. The parsed data is stored in Postgres
 6. You get a Telegram notification 2 minutes later
 7. You query your data anytime via Telegram commands or plain English
@@ -253,6 +253,34 @@ Send `/summary` to your Telegram bot — it should respond.
 - Add multiple keyword triggers for wider coverage: your currency code, `credited`, `debited`, `Payment`
 - The dedup system prevents duplicates even if multiple automations trigger on the same SMS
 - Test manually first: open the Sika shortcut, tap Run, paste a sample SMS
+
+### Step 6.1: Set Up Android Automation (Alternative)
+
+If you use Android, use an automation app to forward your SMS.
+
+#### Option A: MacroDroid (Easiest)
+1. **Trigger:** SMS Received → Any Number (or specific bank numbers).
+2. **Action:** HTTP Request
+   - Method: **POST**
+   - URL: `https://your-domain/api/sms`
+   - Headers:
+     - `Authorization`: `Bearer YOUR_SMS_API_KEY`
+     - `Content-Type`: `application/json`
+   - Body (JSON):
+     ```json
+     {
+       "sms_body": "{sms_message}",
+       "sender": "{sms_number}"
+     }
+     ```
+
+#### Option B: Tasker (Recommended)
+1. **Profile:** Event → Phone → Received Text.
+2. **Task:** HTTP Request
+   - Method: **POST**
+   - URL: `https://your-domain/api/sms`
+   - Headers: `Authorization: Bearer YOUR_SMS_API_KEY`
+   - Body: `{"sms_body": "%SMSRB", "sender": "%SMSRF"}`
 
 ### Step 7: Set Up Bot Commands
 
