@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import userConfig from '../sika.config.js';
 
 export const config = {
