@@ -8,28 +8,28 @@
 export default {
   // ─── Database ──────────────────────────────────────────────
   // Neon Postgres connection string (https://neon.tech — free tier works)
-  databaseUrl: 'postgresql://user:password@host/dbname?sslmode=require',
+  databaseUrl: 'REPLACE_WITH_DATABASE_URL',
 
-  // ─── Anthropic ─────────────────────────────────────────────
-  // API key from https://console.anthropic.com
-  anthropicApiKey: 'sk-ant-xxx',
+  // ─── Gemini ─────────────────────────────────────────────
+  // API key from Google AI Studio
+  geminiApiKey: 'REPLACE_WITH_GEMINI_API_KEY',
 
   // ─── Telegram Bot ──────────────────────────────────────────
   // 1. Message @BotFather on Telegram → /newbot → copy the token
   // 2. Message your bot, then visit: https://api.telegram.org/bot<TOKEN>/getUpdates
   //    to find your chat ID
-  telegramBotToken: '123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
-  telegramChatId: '123456789',
+  telegramBotToken: 'REPLACE_WITH_TELEGRAM_BOT_TOKEN',
+  telegramChatId: 'REPLACE_WITH_TELEGRAM_CHAT_ID',
 
   // ─── Server ────────────────────────────────────────────────
   // Your public HTTPS domain (Telegram webhooks require HTTPS)
-  webhookDomain: 'https://pennywatch.yourdomain.com',
+  webhookDomain: 'REPLACE_WITH_WEBHOOK_DOMAIN',
   port: 3000,
 
   // ─── SMS API Key ───────────────────────────────────────────
   // Generate one: openssl rand -hex 32
   // This goes in your iOS Shortcut's Authorization header
-  smsApiKey: 'generate-a-random-key-here',
+  smsApiKey: 'REPLACE_WITH_SMS_API_KEY',
 
   // ─── Personalization (optional) ────────────────────────────
   currency: 'GHS',
