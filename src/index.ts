@@ -3,6 +3,8 @@ import express from 'express';
 
 import { config } from './config.js';
 import { smsRouter } from './sms/router.js';
+import setupRouter from './setup/router.js';
+import paystackWebhook from './payments/webhook.js';
 import { bot } from './telegram/bot.js';
 import { startScheduler } from './cron/scheduler.js';
 
@@ -16,6 +18,12 @@ app.get('/health', (_req, res) => {
 
 // SMS ingestion
 app.use(smsRouter);
+
+// Shortcut setup (one-time download link)
+app.use(setupRouter);
+
+// Paystack payment webhook
+app.use(paystackWebhook);
 
 // Start server and bot
 async function start(): Promise<void> {
