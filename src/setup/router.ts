@@ -101,7 +101,7 @@ setupRouter.get('/setup/shortcut', async (req: Request, res: Response): Promise<
   }
 
   // 7. Stream the binary back with the MIME type iOS recognises
-  res.setHeader('Content-Type', 'application/x-apple-aspen-config');
+  res.setHeader('Content-Type', 'application/octet-stream');
   res.setHeader('Content-Disposition', 'attachment; filename="Sika.shortcut"');
   res.setHeader('Content-Length', shortcutBuffer.length);
   res.end(shortcutBuffer);
