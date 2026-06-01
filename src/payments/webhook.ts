@@ -55,7 +55,7 @@ for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     lastErr = err;
     console.error(`[paystack-webhook] Attempt ${attempt} failed:`, err);
     if (attempt < MAX_RETRIES) {
-      await new Promise(res => setTimeout(res, 1000 * attempt));
+      await new Promise(res => setTimeout(res, 3000 * attempt));
     }
   }
 }
