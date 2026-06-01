@@ -56,11 +56,18 @@ setupRouter.get('/setup/shortcut', async (req: Request, res: Response): Promise<
 
   const row = result.rows[0];
 
-  // 3. Reject already-used tokens (link-forwarding protection)
-  if (row.used_at !== null) {
-    res.status(410).json({ error: 'This link has already been used' });
-    return;
-  }
+    // 3. Reject already-used tokens — but allow a 10-minute grace window
+    // to handle email clients pre-fetching the link before the user taps it
+    if (row.used_at !== null) {
+      const usedAt = new Date(row.used_at);
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+      if (usedAt < tenMinutesAgo) {
+        res.status(410).json({ error: 'This link has already been used' });
+        return;
+      }
+      // within grace window — fall through and serve the shortcut again
+    }
 
   // 4. Reject expired tokens
   if (new Date(row.expires_at) < new Date()) {
@@ -68,21 +75,17 @@ setupRouter.get('/setup/shortcut', async (req: Request, res: Response): Promise<
     return;
   }
 
-  // 5. Mark the token as consumed (atomic CAS — only succeeds if still unused)
-  const consumed = await query(
-    `UPDATE setup_tokens
-        SET used_at = NOW()
+    // 5. Mark as consumed only if not already — if already used within grace
+    // window, skip the update and just serve the file
+    if (row.used_at === null) {
+      await query(
+        `UPDATE setup_tokens
+            SET used_at = NOW()
       WHERE id = $1
-        AND used_at IS NULL
-      RETURNING id`,
+        AND used_at IS NULL`,
     [row.id],
   );
-
-  if (consumed.rows.length === 0) {
-    // Race condition: another request consumed it a millisecond earlier
-    res.status(410).json({ error: 'This link has already been used' });
-    return;
-  }
+}
 
   // 6. Generate the pre-filled .shortcut binary
   const smsApiKey = row.sms_api_key || config.smsApiKey;

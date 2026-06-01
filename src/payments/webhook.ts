@@ -52,10 +52,11 @@ paystackWebhook.post(['/payments/webhook', '/api/webhooks/paystack'], async (req
       await sendSetupEmail(email, token);
 
       console.log(`[paystack-webhook] Onboarding setup email successfully sent to: ${email}`);
-    } catch (err) {
-      console.error('[paystack-webhook] Error processing user setup on payment success:', err);
-      // Still return 200 to Paystack to acknowledge receipt, otherwise they'll keep retrying
-    }
+} catch (err) {
+  console.error('[paystack-webhook] FULL ERROR:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
+  res.status(200).json({ status: 'success' });
+  return;
+}
   }
 
   res.status(200).json({ status: 'success' });
