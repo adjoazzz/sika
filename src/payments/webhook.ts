@@ -41,21 +41,27 @@ paystackWebhook.post(['/payments/webhook', '/api/webhooks/paystack'], async (req
 
     console.log(`[paystack-webhook] Payment successful for customer: ${email}`);
 
-    try {
-      // 1. Generate a new secure, random API Key for the user's iPhone shortcut
-      const userSmsApiKey = crypto.randomBytes(32).toString('hex');
-      
-      // 2. Generate a secure, one-time setup token
-      const token = await createSetupToken(userSmsApiKey, config.webhookDomain);
-      
-      // 3. Send the onboarding setup email with the setup link
-      await sendSetupEmail(email, token);
+const MAX_RETRIES = 3;
+let lastErr: unknown;
 
-      console.log(`[paystack-webhook] Onboarding setup email successfully sent to: ${email}`);
-} catch (err) {
-  console.error('[paystack-webhook] FULL ERROR:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
-  res.status(200).json({ status: 'success' });
-  return;
+for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+  try {
+    const userSmsApiKey = crypto.randomBytes(32).toString('hex');
+    const token = await createSetupToken(userSmsApiKey, config.webhookDomain);
+    await sendSetupEmail(email, token);
+    console.log(`[paystack-webhook] Onboarding setup email successfully sent to: ${email}`);
+    break;
+  } catch (err) {
+    lastErr = err;
+    console.error(`[paystack-webhook] Attempt ${attempt} failed:`, err);
+    if (attempt < MAX_RETRIES) {
+      await new Promise(res => setTimeout(res, 1000 * attempt));
+    }
+  }
+}
+
+if (lastErr) {
+  console.error('[paystack-webhook] All retries failed for:', email);
 }
   }
 

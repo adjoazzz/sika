@@ -25,6 +25,9 @@ app.use(setupRouter);
 // Paystack payment webhook
 app.use(paystackWebhook);
 
+process.once('SIGINT', () => bot.stop('SIGINT'));
+process.once('SIGTERM', () => bot.stop('SIGTERM'));
+
 // Start server and bot
 async function start(): Promise<void> {
   // Use Long Polling for the bot — much more reliable for local development
