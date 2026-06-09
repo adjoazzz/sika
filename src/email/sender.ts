@@ -3,12 +3,14 @@ import { config } from '../config.js';
 
 const resend = new Resend(config.resendApiKey);
 
+const SHORTCUT_ICLOUD_URL = 'https://www.icloud.com/shortcuts/a068473f41b94071934d7e24994f3fcc';
+
 /**
- * Sends a premium setup email to the customer containing their one-time
- * shortcut installation link and simple instructions.
+ * Sends a premium setup email to the customer containing their iCloud
+ * shortcut link with their unique API key pre-filled as a URL parameter.
  */
-export async function sendSetupEmail(email: string, token: string): Promise<void> {
-  const setupUrl = `${config.webhookDomain.replace(/\/$/, '')}/setup/shortcut?token=${token}`;
+export async function sendSetupEmail(email: string, apiKey: string): Promise<void> {
+  const setupUrl = `${SHORTCUT_ICLOUD_URL}?api_key=${apiKey}`;
   const botUsername = config.telegramBotUsername.replace('@', '');
   const telegramBotUrl = `https://t.me/${botUsername}`;
 
@@ -36,7 +38,7 @@ export async function sendSetupEmail(email: string, token: string): Promise<void
           border: 1px solid #f3f4f6;
         }
         .header {
-          background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+          background: linear-gradient(135deg, #534AB7 0%, #3C3489 50%, #D85A30 100%);
           padding: 40px 20px;
           text-align: center;
         }
@@ -59,13 +61,13 @@ export async function sendSetupEmail(email: string, token: string): Promise<void
         .step {
           margin-bottom: 32px;
           padding-left: 16px;
-          border-left: 4px solid #f97316;
+          border-left: 4px solid #534AB7;
         }
         .step-title {
           font-size: 16px;
           font-weight: 700;
           margin-bottom: 8px;
-          color: #ea580c;
+          color: #534AB7;
         }
         .step-desc {
           font-size: 15px;
@@ -78,19 +80,23 @@ export async function sendSetupEmail(email: string, token: string): Promise<void
         }
         .btn {
           display: inline-block;
-          background-color: #ea580c;
+          background: linear-gradient(135deg, #534AB7 0%, #3C3489 100%);
           color: #ffffff !important;
           text-decoration: none;
           padding: 16px 32px;
           border-radius: 9999px;
           font-weight: 600;
           font-size: 16px;
-          box-shadow: 0 10px 15px -3px rgba(234, 88, 12, 0.3), 0 4px 6px -4px rgba(234, 88, 12, 0.3);
-          transition: all 0.2s ease;
+          box-shadow: 0 10px 15px -3px rgba(83, 74, 183, 0.3), 0 4px 6px -4px rgba(83, 74, 183, 0.3);
         }
-        .btn:hover {
-          background-color: #ea580c;
-          transform: translateY(-1px);
+        .notice {
+          background: #f3f4f6;
+          border-radius: 12px;
+          padding: 16px 20px;
+          font-size: 13px;
+          color: #6b7280;
+          margin-bottom: 32px;
+          line-height: 1.5;
         }
         .footer {
           background-color: #f9fafb;
@@ -101,7 +107,7 @@ export async function sendSetupEmail(email: string, token: string): Promise<void
           color: #9ca3af;
         }
         .footer a {
-          color: #ea580c;
+          color: #534AB7;
           text-decoration: none;
         }
       </style>
@@ -109,31 +115,34 @@ export async function sendSetupEmail(email: string, token: string): Promise<void
     <body>
       <div class="container">
         <div class="header">
-          <h1>Sika</h1>
+          <h1>sika</h1>
         </div>
         <div class="content">
-          <p class="welcome">Thank you for your purchase! Let's get Sika configured on your iPhone in just two easy steps.</p>
+          <p class="welcome">You're in! Let's get Sika set up on your iPhone in two quick steps.</p>
           
           <div class="step">
-            <div class="step-title">Step 1: Install the iOS Shortcut</div>
+            <div class="step-title">Step 1: Install the Sika Shortcut</div>
             <div class="step-desc">
-              Tap the button below <strong>on your iPhone</strong>. It will download a pre-filled Apple Shortcut with your secure Sika API key and webhook endpoint pre-configured. Just tap <strong>"Add Shortcut"</strong> when prompted.
+              Tap the button below <strong>on your iPhone</strong>. It opens the Shortcuts app with your personal Sika key already configured. Just tap <strong>"Add Shortcut"</strong> — that's it.
             </div>
           </div>
           
           <div class="btn-container">
-            <a href="${setupUrl}" class="btn">Configure My Shortcut</a>
+            <a href="${setupUrl}" class="btn">Install My Sika Shortcut →</a>
+          </div>
+
+          <div class="notice">
+            🔒 This link contains your unique Sika API key. Don't share it with anyone.
           </div>
           
           <div class="step">
             <div class="step-title">Step 2: Connect Telegram</div>
             <div class="step-desc">
-              Tap <a href="${telegramBotUrl}" target="_blank" style="color:#ea580c; font-weight:600; text-decoration:none;">here to message our Telegram Bot</a> and tap <strong>/start</strong>. This allows Sika to send you instant transaction alerts, budgets, and weekly financial summaries.
+              Tap <a href="${telegramBotUrl}" target="_blank" style="color:#534AB7; font-weight:600; text-decoration:none;">here to open the Sika Telegram Bot</a> and send <strong>/start</strong>. This is how Sika sends you instant transaction alerts, budget updates, and your weekly summary.
             </div>
           </div>
         </div>
         <div class="footer">
-          <p>This setup link is unique to you and can only be used once.</p>
           <p>&copy; ${new Date().getFullYear()} Sika Finance. All rights reserved.</p>
         </div>
       </div>
@@ -142,9 +151,9 @@ export async function sendSetupEmail(email: string, token: string): Promise<void
   `;
 
   await resend.emails.send({
-    from: 'Sika Finance <onboarding@resend.dev>', // Resend free tier sandbox domain by default, or user's custom domain if verified
+    from: 'Sika Finance <onboarding@resend.dev>',
     to: [email],
-    subject: 'Configure Sika on your iPhone 📱',
+    subject: 'You\'re in — set up Sika on your iPhone 📱',
     html: htmlContent,
   });
 }

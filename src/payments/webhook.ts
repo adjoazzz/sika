@@ -48,7 +48,7 @@ for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
   try {
     const userSmsApiKey = crypto.randomBytes(32).toString('hex');
     const token = await createSetupToken(userSmsApiKey, config.webhookDomain);
-    await sendSetupEmail(email, token);
+    await sendSetupEmail(email, userSmsApiKey);
     console.log(`[paystack-webhook] Onboarding setup email successfully sent to: ${email}`);
     break;
   } catch (err) {
