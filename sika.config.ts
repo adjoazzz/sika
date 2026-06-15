@@ -1,10 +1,3 @@
-/**
- * PennyWatch Configuration
- *
- * Copy this file and fill in your values.
- * See README.md for how to get each credential.
- */
-
 export default {
   // ─── Database ──────────────────────────────────────────────
   // Neon Postgres connection string (https://neon.tech — free tier works)
