@@ -30,7 +30,38 @@ bot.use(async (ctx, next) => {
 });
 
 bot.command('start', async (ctx) => {
-  await ctx.reply('Welcome to Sika! 💸 I am your personal finance tracker. Send me an SMS transaction, or type commands like /summary or /balance.');
+  const chatId = String(ctx.chat.id);
+
+  const result = await query<{ count: string }>(
+    'SELECT COUNT(*)::text AS count FROM transactions',
+  );
+  const hasTransactions = parseInt(result.rows[0].count, 10) > 0;
+
+  if (hasTransactions) {
+    await ctx.reply(
+      '👋 Welcome back to Sika\\!\n\nYour automation is all set — MoMo transactions are being tracked automatically\\.\n\nHere\'s what you can do:\n• /summary — spending breakdown this month\n• /balance — income vs spending\n• /recent — last 10 transactions\n• /budget set <category> <amount> — set a budget\n• /streaks — budget winning streaks',
+      { parse_mode: 'MarkdownV2' },
+    );
+    return;
+  }
+
+  await cancelPendingReminders('setup_nudge', chatId);
+
+  await ctx.reply('👋 Welcome to *Sika\\!*\n\nI track your mobile money automatically by reading your MoMo SMS alerts\\. Let\'s get your iOS Shortcuts automation set up — it only takes a minute\\.', { parse_mode: 'MarkdownV2' });
+
+  await ctx.reply('📱 *Step 1 — Open Shortcuts*\n\nGo to the *Shortcuts* app → tap *Automation* at the bottom → *\\+* → *New Automation* → *Message*\\.', { parse_mode: 'MarkdownV2' });
+
+  await ctx.reply('🔍 *Step 2 — Set the trigger keywords*\n\nUnder *Message Contains*, add each of these keywords one by one\\. Tap each one below to copy it, then paste it into Shortcuts:', { parse_mode: 'MarkdownV2' });
+
+  for (const kw of ['You have sent', 'You have received', 'Your payment of', 'Available balance']) {
+    await ctx.reply(`\`${kw}\``, { parse_mode: 'MarkdownV2' });
+  }
+
+  await ctx.reply('⚡ *Step 3 — Add the action*\n\nAfter setting the keywords, tap *Next* → *Add Action* → search for *Send Message* → choose *Telegram*\\.\n\nSet the message body to *Shortcut Input* → *Message*\\.', { parse_mode: 'MarkdownV2' });
+
+  await ctx.reply('✅ *All set\\!*\n\nMake any MoMo transaction and I\'ll confirm it worked\\! 🎉', { parse_mode: 'MarkdownV2' });
+
+  await scheduleReminder('setup_nudge', chatId, SETUP_NUDGE_DELAY_MS);
 });
 
 bot.command('summary', async (ctx) => {
