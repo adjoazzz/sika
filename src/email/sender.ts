@@ -151,7 +151,7 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
   `;
 
   await resend.emails.send({
-    from: 'Sika Finance <hello@sikafinance.xyz>',
+    from: 'Sika Finance <onboarding@sikafinance.xyz>',
     to: [email],
     subject: 'You\'re in — set up Sika on your iPhone',
     html: htmlContent,

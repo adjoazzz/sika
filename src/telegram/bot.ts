@@ -1,4 +1,6 @@
 import { Telegraf } from 'telegraf';
+import { query } from '../db/client.js';
+import { scheduleReminder, cancelPendingReminders, flushDueReminders } from './reminders.js';
 import { message } from 'telegraf/filters';
 
 import { config } from '../config.js';
@@ -11,6 +13,9 @@ import { handleNaturalLanguageQuery } from './nlp.js';
 import { generateMonthlySummary } from '../cron/monthly-summary.js';
 
 export const bot = new Telegraf(config.telegramBotToken);
+
+const REMINDER_POLL_INTERVAL_MS = 5 * 60 * 1000;
+const SETUP_NUDGE_DELAY_MS = 24 * 60 * 60 * 1000;
 
 function isAuthorized(chatId: number): boolean {
   return String(chatId) === config.telegramChatId;
@@ -85,4 +90,34 @@ bot.command('monthly', async (ctx) => {
 bot.on(message('text'), async (ctx) => {
   const msg = await handleNaturalLanguageQuery(ctx.message.text);
   await ctx.reply(msg, { parse_mode: 'Markdown' });
+  await cancelPendingReminders('setup_nudge', String(ctx.chat.id));
 });
+
+export function startReminderPoller(): void {
+  const poll = async () => {
+    await flushDueReminders(async (type, chatId) => {
+      if (type === 'setup_nudge') {
+        const result = await query<{ count: string }>(
+          'SELECT COUNT(*)::text AS count FROM transactions',
+        );
+        const hasTransactions = parseInt(result.rows[0].count, 10) > 0;
+        if (hasTransactions) return;
+
+        await bot.telegram.sendMessage(
+          chatId,
+          '⏰ *Just checking in\\!*\n\n' +
+          'It looks like no MoMo transaction has come through yet\\. ' +
+          'If you\'re still setting up your iOS Shortcut, send /start again for the full guide\\.\n\n' +
+          'Already set it up? Try making a small MoMo transfer to test it\\! 📲',
+          { parse_mode: 'MarkdownV2' },
+        );
+      }
+    });
+  };
+
+  poll().catch(err => console.error('[reminders] initial poll error:', err));
+
+  setInterval(() => {
+    poll().catch(err => console.error('[reminders] poll error:', err));
+  }, REMINDER_POLL_INTERVAL_MS);
+}

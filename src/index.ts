@@ -5,7 +5,7 @@ import { config } from './config.js';
 import { smsRouter } from './sms/router.js';
 import setupRouter from './setup/router.js';
 import paystackWebhook from './payments/webhook.js';
-import { bot } from './telegram/bot.js';
+import { bot, startReminderPoller } from './telegram/bot.js';
 import { startScheduler } from './cron/scheduler.js';
 
 const app = express();
@@ -30,7 +30,6 @@ process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 // Start server and bot
 async function start(): Promise<void> {
-  // Use Long Polling for the bot — much more reliable for local development
   await bot.telegram.deleteWebhook();
   bot.launch().then(() => {
     console.log('Telegram bot started (long polling)');
@@ -38,8 +37,8 @@ async function start(): Promise<void> {
     console.error('Failed to launch bot:', err);
   });
 
-  // Start cron scheduler
   startScheduler();
+  startReminderPoller(); // ← new line
 
   app.listen(config.port, () => {
     console.log(`Sika server running on port ${config.port}`);
