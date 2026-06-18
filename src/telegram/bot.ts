@@ -37,10 +37,9 @@ bot.command('start', async (ctx) => {
   );
   const hasTransactions = parseInt(result.rows[0].count, 10) > 0;
 
-  if (hasTransactions) {
+if (hasTransactions) {
     await ctx.reply(
-      '👋 Welcome back to Sika\\!\n\nYour automation is all set — MoMo transactions are being tracked automatically\\.\n\nHere\'s what you can do:\n• /summary — spending breakdown this month\n• /balance — income vs spending\n• /recent — last 10 transactions\n• /budget set <category> <amount> — set a budget\n• /streaks — budget winning streaks',
-      { parse_mode: 'MarkdownV2' },
+      '👋 Welcome back to Sika!\n\nYour automation is all set — MoMo transactions are being tracked automatically.\n\nHere\'s what you can do:\n• /summary — spending breakdown this month\n• /balance — income vs spending\n• /recent — last 10 transactions\n• /budget set <category> <amount> — set a budget\n• /streaks — budget winning streaks',
     );
     return;
   }
