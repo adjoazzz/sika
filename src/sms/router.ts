@@ -21,10 +21,25 @@ async function logAudit(smsBody: string, sender: string | undefined, receivedAt:
 
 smsRouter.post('/api/sms', async (req, res) => {
   const apiKey = req.headers.authorization?.replace('Bearer ', '');
-  if (apiKey !== config.smsApiKey) {
+
+  if (!apiKey) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
+
+  // Look up the user by their unique sms_api_key
+  const userResult = await query<{ id: string; telegram_chat_id: string | null }>(
+    'SELECT id, telegram_chat_id FROM users WHERE sms_api_key = $1',
+    [apiKey],
+  );
+
+  if (userResult.rows.length === 0) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const user = userResult.rows[0];
+  const telegramChatId = user.telegram_chat_id;
 
   const { sms_body, sender } = req.body;
   const received_at = req.body.received_at
@@ -42,11 +57,10 @@ smsRouter.post('/api/sms', async (req, res) => {
   try {
     classification = await classifySms(sms_body);
   } catch {
-    // If classification fails, treat as transaction and try to parse
     classification = { type: 'transaction' as const, balance: null, source: 'unknown' };
   }
 
-  // Handle balance checks — log but don't create a transaction
+  // Handle balance checks
   if (classification.type === 'balance_check') {
     if (classification.balance !== null) {
       await query(
@@ -59,14 +73,14 @@ smsRouter.post('/api/sms', async (req, res) => {
     return;
   }
 
-  // Handle non-financial SMS — log and skip
+  // Handle non-financial SMS
   if (classification.type === 'other') {
     await logAudit(sms_body, sender, received_at, 'skipped', undefined, 'Non-financial SMS');
     res.status(200).json({ status: 'skipped' });
     return;
   }
 
-  // Step 2: It's a transaction — check for duplicates
+  // Step 2: Check for duplicates
   const smsHash = computeSmsHash(sms_body, received_at);
 
   const existing = await query(
@@ -79,7 +93,7 @@ smsRouter.post('/api/sms', async (req, res) => {
     return;
   }
 
-  // Step 3: Parse the transaction details
+  // Step 3: Parse the transaction
   const overridesResult = await query<{ merchant: string; new_category: string }>(
     'SELECT DISTINCT ON (merchant) merchant, new_category FROM category_overrides ORDER BY merchant, created_at DESC',
   );
@@ -101,7 +115,6 @@ smsRouter.post('/api/sms', async (req, res) => {
   }
 
   const type = parsed.direction === 'credit' ? 'income' : 'expense';
-
   const parsedDate = new Date(parsed.transaction_date);
   const transactionDate = parsedDate.getFullYear() >= 2025 ? parsed.transaction_date : received_at;
 
@@ -115,12 +128,17 @@ smsRouter.post('/api/sms', async (req, res) => {
   const transactionId = result.rows[0].id;
 
   await detectTransfer(transactionId);
+
+  // Send budget alert to this specific user's Telegram
   checkBudgetThresholds(parsed.category).then(alert => {
-    if (alert) bot.telegram.sendMessage(config.telegramChatId, alert).catch(console.error);
+    if (alert && telegramChatId) {
+      bot.telegram.sendMessage(telegramChatId, alert).catch(console.error);
+    }
   }).catch(console.error);
 
+  // Send transaction notification to this specific user
   setTimeout(() => {
-    notifyNewTransaction(transactionId).catch(console.error);
+    notifyNewTransaction(transactionId, telegramChatId ?? undefined).catch(console.error);
   }, 2 * 60 * 1000);
 
   await logAudit(sms_body, sender, received_at, 'created', transactionId);

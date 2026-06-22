@@ -5,14 +5,12 @@ const resend = new Resend(config.resendApiKey);
 
 const SHORTCUT_ICLOUD_URL = 'https://www.icloud.com/shortcuts/a068473f41b94071934d7e24994f3fcc';
 
-/**
- * Sends a premium setup email to the customer containing their iCloud
- * shortcut link with their unique API key pre-filled as a URL parameter.
- */
-export async function sendSetupEmail(email: string, apiKey: string): Promise<void> {
+export async function sendSetupEmail(email: string, apiKey: string, linkCode: string): Promise<void> {
   const setupUrl = `${SHORTCUT_ICLOUD_URL}?api_key=${apiKey}`;
   const botUsername = config.telegramBotUsername.replace('@', '');
-  const telegramBotUrl = `https://t.me/${botUsername}`;
+
+  // Deep link — when tapped, opens bot and auto-sends /start <linkCode>
+  const telegramBotUrl = `https://t.me/${botUsername}?start=${linkCode}`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -49,9 +47,7 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
           font-weight: 800;
           letter-spacing: -0.025em;
         }
-        .content {
-          padding: 40px 30px;
-        }
+        .content { padding: 40px 30px; }
         .welcome {
           font-size: 18px;
           line-height: 1.6;
@@ -76,7 +72,7 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
         }
         .btn-container {
           text-align: center;
-          margin: 40px 0;
+          margin: 24px 0;
         }
         .btn {
           display: inline-block;
@@ -89,6 +85,17 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
           font-size: 16px;
           box-shadow: 0 10px 15px -3px rgba(83, 74, 183, 0.3), 0 4px 6px -4px rgba(83, 74, 183, 0.3);
         }
+        .btn-outline {
+          display: inline-block;
+          background: transparent;
+          color: #534AB7 !important;
+          text-decoration: none;
+          padding: 16px 32px;
+          border-radius: 9999px;
+          font-weight: 600;
+          font-size: 16px;
+          border: 2px solid #534AB7;
+        }
         .notice {
           background: #f3f4f6;
           border-radius: 12px;
@@ -98,6 +105,11 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
           margin-bottom: 32px;
           line-height: 1.5;
         }
+        .divider {
+          height: 1px;
+          background: #f3f4f6;
+          margin: 32px 0;
+        }
         .footer {
           background-color: #f9fafb;
           padding: 24px;
@@ -106,27 +118,22 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
           font-size: 13px;
           color: #9ca3af;
         }
-        .footer a {
-          color: #534AB7;
-          text-decoration: none;
-        }
+        .footer a { color: #534AB7; text-decoration: none; }
       </style>
     </head>
     <body>
       <div class="container">
-        <div class="header">
-          <h1>sika</h1>
-        </div>
+        <div class="header"><h1>sika</h1></div>
         <div class="content">
-          <p class="welcome">You're in! Let's get Sika set up on your iPhone in two quick steps.</p>
-          
+          <p class="welcome">You're in! Two quick taps and Sika is ready to track every cedi.</p>
+
           <div class="step">
-            <div class="step-title">Step 1: Install the Sika Shortcut</div>
+            <div class="step-title">Step 1 — Install the Sika Shortcut</div>
             <div class="step-desc">
               Tap the button below <strong>on your iPhone</strong>. It opens the Shortcuts app with your personal Sika key already configured. Just tap <strong>"Add Shortcut"</strong> — that's it.
             </div>
           </div>
-          
+
           <div class="btn-container">
             <a href="${setupUrl}" class="btn">Install My Sika Shortcut →</a>
           </div>
@@ -134,16 +141,22 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
           <div class="notice">
             🔒 This link contains your unique Sika API key. Don't share it with anyone.
           </div>
-          
+
+          <div class="divider"></div>
+
           <div class="step">
-            <div class="step-title">Step 2: Connect Telegram</div>
+            <div class="step-title">Step 2 — Connect Telegram</div>
             <div class="step-desc">
-              Tap <a href="${telegramBotUrl}" target="_blank" style="color:#534AB7; font-weight:600; text-decoration:none;">here to open the Sika Telegram Bot</a> and send <strong>/start</strong>. This is how Sika sends you instant transaction alerts, budget updates, and your weekly summary.
+              Tap the button below to open the Sika Telegram Bot. It will connect your account automatically — no codes to copy or paste.
             </div>
+          </div>
+
+          <div class="btn-container">
+            <a href="${telegramBotUrl}" class="btn-outline">Connect Telegram →</a>
           </div>
         </div>
         <div class="footer">
-          <p>&copy; ${new Date().getFullYear()} Sika Finance. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Sika Finance. All rights reserved. &nbsp;·&nbsp; <a href="https://sikafinance.xyz/privacy.html">Privacy Policy</a></p>
         </div>
       </div>
     </body>
@@ -153,7 +166,7 @@ export async function sendSetupEmail(email: string, apiKey: string): Promise<voi
   await resend.emails.send({
     from: 'Sika Finance <onboarding@sikafinance.xyz>',
     to: [email],
-    subject: 'You\'re in — set up Sika on your iPhone',
+    subject: "You're in — set up Sika on your iPhone",
     html: htmlContent,
   });
 }
