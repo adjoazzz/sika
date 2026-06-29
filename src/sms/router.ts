@@ -21,6 +21,7 @@ async function logAudit(smsBody: string, sender: string | undefined, receivedAt:
 
 smsRouter.post('/api/sms', async (req, res) => {
   const apiKey = req.headers.authorization?.replace('Bearer ', '');
+  console.log('Received API key:', apiKey);
 
   if (!apiKey) {
     res.status(401).json({ error: 'Unauthorized' });
