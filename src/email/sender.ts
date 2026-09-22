@@ -11,6 +11,7 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
 
   // Deep link — when tapped, opens bot and auto-sends /start <linkCode>
   const telegramBotUrl = `https://t.me/${botUsername}?start=${linkCode}`;
+  const androidSetupUrl = `${config.webhookDomain}/setup/android?token=${linkCode}`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -55,7 +56,7 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
           margin-bottom: 24px;
         }
         .step {
-          margin-bottom: 32px;
+          margin-bottom: 24px;
           padding-left: 16px;
           border-left: 4px solid #534AB7;
         }
@@ -72,28 +73,43 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
         }
         .btn-container {
           text-align: center;
-          margin: 24px 0;
+          margin: 16px 0 24px 0;
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          flex-wrap: wrap;
         }
         .btn {
           display: inline-block;
           background: linear-gradient(135deg, #534AB7 0%, #3C3489 100%);
           color: #ffffff !important;
           text-decoration: none;
-          padding: 16px 32px;
+          padding: 14px 24px;
           border-radius: 9999px;
           font-weight: 600;
-          font-size: 16px;
-          box-shadow: 0 10px 15px -3px rgba(83, 74, 183, 0.3), 0 4px 6px -4px rgba(83, 74, 183, 0.3);
+          font-size: 15px;
+          box-shadow: 0 4px 6px -1px rgba(83, 74, 183, 0.3);
+        }
+        .btn-secondary {
+          display: inline-block;
+          background: #10b981;
+          color: #ffffff !important;
+          text-decoration: none;
+          padding: 14px 24px;
+          border-radius: 9999px;
+          font-weight: 600;
+          font-size: 15px;
+          box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
         }
         .btn-outline {
           display: inline-block;
           background: transparent;
           color: #534AB7 !important;
           text-decoration: none;
-          padding: 16px 32px;
+          padding: 14px 28px;
           border-radius: 9999px;
           font-weight: 600;
-          font-size: 16px;
+          font-size: 15px;
           border: 2px solid #534AB7;
         }
         .notice {
@@ -102,13 +118,13 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
           padding: 16px 20px;
           font-size: 13px;
           color: #6b7280;
-          margin-bottom: 32px;
+          margin-bottom: 24px;
           line-height: 1.5;
         }
         .divider {
           height: 1px;
           background: #f3f4f6;
-          margin: 32px 0;
+          margin: 28px 0;
         }
         .footer {
           background-color: #f9fafb;
@@ -125,21 +141,22 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
       <div class="container">
         <div class="header"><h1>sika</h1></div>
         <div class="content">
-          <p class="welcome">You're in! Two quick taps and Sika is ready to track every cedi.</p>
+          <p class="welcome">You're in! Sika is ready to track your transactions automatically on iOS or Android.</p>
 
           <div class="step">
-            <div class="step-title">Step 1 — Install the Sika Shortcut</div>
+            <div class="step-title">Step 1 — Set Up Automation</div>
             <div class="step-desc">
-              Tap the button below <strong>on your iPhone</strong>. It opens the Shortcuts app with your personal Sika key already configured. Just tap <strong>"Add Shortcut"</strong> — that's it.
+              Choose your phone platform to configure automatic SMS forwarding:
             </div>
           </div>
 
           <div class="btn-container">
-            <a href="${setupUrl}" class="btn">Install My Sika Shortcut →</a>
+            <a href="${setupUrl}" class="btn">📱 Install iOS Shortcut</a>
+            <a href="${androidSetupUrl}" class="btn-secondary">🤖 Android Setup Guide</a>
           </div>
 
           <div class="notice">
-            🔒 This link contains your unique Sika API key. Don't share it with anyone.
+            🔒 Your link contains your personal Sika credentials. Keep it private.
           </div>
 
           <div class="divider"></div>
@@ -147,7 +164,7 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
           <div class="step">
             <div class="step-title">Step 2 — Connect Telegram</div>
             <div class="step-desc">
-              Tap the button below to open the Sika Telegram Bot. It will connect your account automatically — no codes to copy or paste.
+              Tap the button below to connect the Sika Telegram Bot to your account automatically.
             </div>
           </div>
 
@@ -166,7 +183,7 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
   await resend.emails.send({
     from: 'Sika Finance <onboarding@sikafinance.xyz>',
     to: [email],
-    subject: "You're in — set up Sika on your iPhone",
+    subject: "You're in — set up Sika on your phone",
     html: htmlContent,
   });
 }

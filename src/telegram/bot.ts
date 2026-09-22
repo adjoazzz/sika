@@ -76,17 +76,7 @@ bot.command('start', async (ctx) => {
 
     await ctx.reply('✅ *Your Sika account is connected\\!*\n\nYou\'re all set — I\'ll notify you every time a MoMo transaction comes through\\.', { parse_mode: 'MarkdownV2' });
 
-    await ctx.reply('📱 *One last step — set up your SMS automation*\n\nGo to the *Shortcuts* app → tap *Automation* at the bottom → *\\+* → *New Automation* → *Message*\\.', { parse_mode: 'MarkdownV2' });
-
-    await ctx.reply('🔍 *Set the trigger keywords*\n\nUnder *Message Contains*, add each of these one by one — tap to copy:', { parse_mode: 'MarkdownV2' });
-
-    for (const kw of ['You have sent', 'You have received', 'Your payment of', 'Available balance']) {
-      await ctx.reply(`\`${kw}\``, { parse_mode: 'MarkdownV2' });
-    }
-
-    await ctx.reply('⚡ *Add the action*\n\nTap *Next* → *Add Action* → search *Run Shortcut* → select *Sika* → set to *Run Immediately*\\.', { parse_mode: 'MarkdownV2' });
-
-    await ctx.reply('🎉 *All done\\!* Make any MoMo transaction and I\'ll confirm it worked\\.', { parse_mode: 'MarkdownV2' });
+    await ctx.reply('📱 *One last step — set up your SMS automation*\n\n• *iPhone users:* Follow the iOS Shortcuts guide above\\.\n• *Android users:* Type /android to get your Webhook URL, API key, and MacroDroid/Tasker instructions\\.', { parse_mode: 'MarkdownV2' });
 
     await scheduleReminder('setup_nudge', chatId, SETUP_NUDGE_DELAY_MS);
     return;
@@ -103,11 +93,11 @@ bot.command('start', async (ctx) => {
 
     if (hasTransactions) {
       await ctx.reply(
-        '👋 Welcome back to Sika\\!\n\nYour automation is all set — MoMo transactions are being tracked automatically\\.\n\nHere\'s what you can do:\n• /summary — spending breakdown this month\n• /balance — income vs spending\n• /recent — last 10 transactions\n• /budget set <category> <amount> — set a budget\n• /streaks — budget winning streaks',
+        '👋 Welcome back to Sika\\!\n\nYour automation is all set — MoMo transactions are being tracked automatically\\.\n\nHere\'s what you can do:\n• /summary — spending breakdown this month\n• /balance — income vs spending\n• /recent — last 10 transactions\n• /budget set <category> <amount> — set a budget\n• /streaks — budget winning streaks\n• /android — view Android automation credentials',
         { parse_mode: 'MarkdownV2' },
       );
     } else {
-      await ctx.reply('👋 Welcome back\\! Your account is connected but no transactions yet\\. Make sure your SMS automation is set up\\.', { parse_mode: 'MarkdownV2' });
+      await ctx.reply('👋 Welcome back\\! Your account is connected but no transactions yet\\. Make sure your SMS automation is set up \\(iOS Shortcut or /android\\)\\.', { parse_mode: 'MarkdownV2' });
     }
     return;
   }
@@ -115,6 +105,57 @@ bot.command('start', async (ctx) => {
   // Case 3: /start with no code and not authorized
   await ctx.reply('👋 Welcome to Sika\\!\n\nTo get started, check your setup email and tap *"Connect Telegram"* — it will link your account automatically\\.', { parse_mode: 'MarkdownV2' });
 });
+
+bot.command(['android', 'setup'], async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const result = await query<{ sms_api_key: string }>(
+    'SELECT sms_api_key FROM users WHERE telegram_chat_id = $1',
+    [chatId],
+  );
+
+  const smsApiKey = result.rows[0]?.sms_api_key || config.smsApiKey;
+  const baseUrl = (config.webhookDomain || '').replace(/\/+$/, '');
+  const webhookUrl = `${baseUrl}/api/sms`;
+
+  const text = `🤖 *Android SMS Forwarding Setup*
+
+*1. Your Connection Details (tap to copy):*
+
+• *Webhook URL:*
+\`${webhookUrl}\`
+
+• *SMS API Key:*
+\`${smsApiKey}\`
+
+---
+
+*2. MacroDroid Setup (Easiest):*
+1. Install *MacroDroid* from Google Play.
+2. Trigger: *SMS Received* → Any Number.
+3. Action: *HTTP Request (POST)*
+   • URL: \`${webhookUrl}\`
+   • Header: \`Authorization: Bearer ${smsApiKey}\`
+   • Content-Type: \`application/json\`
+   • Body:
+\`\`\`json
+{
+  "sms_body": "{sms_message}",
+  "sender": "{sms_number}"
+}
+\`\`\`
+
+---
+
+*3. Tasker Setup:*
+• Profile: *Received Text (SMS)*
+• Action: *HTTP Request (POST)*
+   • URL: \`${webhookUrl}\`
+   • Headers: \`Authorization: Bearer ${smsApiKey}\`
+   • Body: \`{"sms_body": "%SMSRB", "sender": "%SMSRF"}\``;
+
+  await ctx.reply(text, { parse_mode: 'Markdown' });
+});
+
 
 bot.command('summary', async (ctx) => {
   const msg = await handleSummary();
