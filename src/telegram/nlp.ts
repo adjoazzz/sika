@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai';
 
 import { config } from '../config.js';
 import { readonlyQuery } from '../db/client.js';
@@ -16,7 +16,7 @@ function parseJsonSafe(text: string): any {
   }
 }
 
-const geminiSqlQuerySchema = {
+const geminiSqlQuerySchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     sql: { type: SchemaType.STRING },
@@ -25,7 +25,7 @@ const geminiSqlQuerySchema = {
   required: ['sql', 'explanation'],
 };
 
-const geminiResponseSchema = {
+const geminiResponseSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     response: { type: SchemaType.STRING },

@@ -82,7 +82,8 @@ paystackWebhook.post(['/payments/webhook', '/api/webhooks/paystack'], async (req
           [userSmsApiKey, email, linkCode],
         );
 
-        await sendSetupEmail(email, userSmsApiKey, linkCode);
+        await sendSetupEmail(email, userSmsApiKey, linkCode, token);
+        lastErr = undefined;
         console.log(`[paystack-webhook] Onboarding setup email successfully sent to: ${email}`);
         break;
       } catch (err) {

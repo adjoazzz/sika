@@ -3,15 +3,15 @@ import { config } from '../config.js';
 
 const resend = new Resend(config.resendApiKey);
 
-const SHORTCUT_ICLOUD_URL = 'https://www.icloud.com/shortcuts/a068473f41b94071934d7e24994f3fcc';
-
-export async function sendSetupEmail(email: string, apiKey: string, linkCode: string): Promise<void> {
-  const setupUrl = `${SHORTCUT_ICLOUD_URL}?api_key=${apiKey}`;
+export async function sendSetupEmail(email: string, _apiKey: string, linkCode: string, setupToken: string): Promise<void> {
+  const baseUrl = config.webhookDomain.replace(/\/+$/, '');
+  // Per-user pages that show this user's own webhook URL + API key
+  const setupUrl = `${baseUrl}/setup/ios?token=${setupToken}`;
   const botUsername = config.telegramBotUsername.replace('@', '');
 
   // Deep link — when tapped, opens bot and auto-sends /start <linkCode>
   const telegramBotUrl = `https://t.me/${botUsername}?start=${linkCode}`;
-  const androidSetupUrl = `${config.webhookDomain}/setup/android?token=${linkCode}`;
+  const androidSetupUrl = `${baseUrl}/setup/android?token=${setupToken}`;
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -151,7 +151,7 @@ export async function sendSetupEmail(email: string, apiKey: string, linkCode: st
           </div>
 
           <div class="btn-container">
-            <a href="${setupUrl}" class="btn">📱 Install iOS Shortcut</a>
+            <a href="${setupUrl}" class="btn">📱 iPhone Setup Guide</a>
             <a href="${androidSetupUrl}" class="btn-secondary">🤖 Android Setup Guide</a>
           </div>
 

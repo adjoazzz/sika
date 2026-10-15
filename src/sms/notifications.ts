@@ -1,17 +1,25 @@
 import { bot } from '../telegram/bot.js';
-import { config } from '../config.js';
 import { query } from '../db/client.js';
 import { fmtAmount, esc } from '../utils/format.js';
+import { resolveChatId } from '../utils/chat.js';
 
-export async function notifyUnparsed(smsBody: string, sender: string | undefined, telegramChatId?: string): Promise<void> {
-  const chatId = telegramChatId ?? config.telegramChatId;
+export async function notifyUnparsed(smsBody: string, sender: string | undefined, telegramChatId?: string | null): Promise<void> {
+  const chatId = resolveChatId(telegramChatId);
+  if (!chatId) {
+    console.warn('[notify] No usable Telegram chat ID (user not linked and telegramChatId in config is unset); skipping unparsed alert');
+    return;
+  }
   const preview = smsBody.length > 200 ? smsBody.slice(0, 200) + '...' : smsBody;
   const msg = `⚠️ *Unparsed SMS*\n\nFrom: ${sender || 'Unknown'}\n\n\`${preview}\`\n\nThis message couldn't be parsed. Use /fix to categorize it manually.`;
   await bot.telegram.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
 }
 
-export async function notifyNewTransaction(transactionId: string, telegramChatId?: string): Promise<void> {
-  const chatId = telegramChatId ?? config.telegramChatId;
+export async function notifyNewTransaction(transactionId: string, telegramChatId?: string | null): Promise<void> {
+  const chatId = resolveChatId(telegramChatId);
+  if (!chatId) {
+    console.warn('[notify] No usable Telegram chat ID (user not linked and telegramChatId in config is unset); skipping transaction alert');
+    return;
+  }
 
   const result = await query<{
     amount: number;

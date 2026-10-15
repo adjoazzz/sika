@@ -19,10 +19,14 @@ export default {
   // 2. Message your bot, then visit: https://api.telegram.org/bot<TOKEN>/getUpdates
   //    to find your chat ID
   telegramBotToken: 'REPLACE_WITH_TELEGRAM_BOT_TOKEN',
+  // Your own chat ID. Used for alerts when an SMS key has no linked Telegram chat.
+  // If left as the placeholder, those alerts are skipped (and a warning is logged).
   telegramChatId: 'REPLACE_WITH_TELEGRAM_CHAT_ID',
 
   // ─── Server ────────────────────────────────────────────────
   // Your public HTTPS domain (Telegram webhooks require HTTPS)
+  // Use a permanent HTTPS domain. Temporary tunnels (loca.lt, etc.) change address on restart,
+  // and loca.lt needs the header `bypass-tunnel-reminder: true` on every request.
   webhookDomain: 'REPLACE_WITH_WEBHOOK_DOMAIN',
   port: 3000,
 

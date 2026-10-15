@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai';
 import { z } from 'zod';
 
 import { config } from '../config.js';
@@ -79,11 +79,12 @@ Return a JSON object with these fields:
   return prompt;
 }
 
-const geminiSmsClassificationSchema = {
+const geminiSmsClassificationSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     type: {
       type: SchemaType.STRING,
+      format: 'enum',
       enum: ['transaction', 'balance_check', 'other'],
     },
     balance: {
@@ -118,11 +119,11 @@ export async function classifySms(smsBody: string): Promise<SmsClassification> {
   return JSON.parse(text) as SmsClassification;
 }
 
-const geminiTransactionSchema = {
+const geminiTransactionSchema: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     amount: { type: SchemaType.NUMBER },
-    direction: { type: SchemaType.STRING, enum: ['credit', 'debit'] },
+    direction: { type: SchemaType.STRING, format: 'enum', enum: ['credit', 'debit'] },
     merchant: { type: SchemaType.STRING },
     category: { type: SchemaType.STRING },
     transaction_date: { type: SchemaType.STRING },

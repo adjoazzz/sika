@@ -7,6 +7,7 @@ import setupRouter from './setup/router.js';
 import paystackWebhook from './payments/webhook.js';
 import { bot, startReminderPoller } from './telegram/bot.js';
 import { startScheduler } from './cron/scheduler.js';
+import { startNotificationPoller } from './sms/notification-poller.js';
 
 const app = express();
 app.use(express.json());
@@ -38,7 +39,8 @@ async function start(): Promise<void> {
   });
 
   startScheduler();
-  startReminderPoller(); // ← new line
+  startReminderPoller();
+  startNotificationPoller();
 
   app.listen(config.port, () => {
     console.log(`Sika server running on port ${config.port}`);
